@@ -2,25 +2,40 @@
 
 # This function takes a numeric vector OR mean and sd values and outputs the 
 # mean plus or minus the standard deviation of that vector with 
-# an appropriate number of sig figs. If calcRang is set to TRUE, it will
-# also return the range in parentheses. If calcCV is set to TRUE, it will
-# return the CV in parentheses. If calc95CI is set to TRUE, it will 
-# return the 95% confidence interval. If reportn is set to TRUE, it will
-# return the number of observations.
+# an appropriate number of sig figs. 
+# If calcRange is set to TRUE, it will also return the range in parentheses. 
+# You can optionally set the number of digits to show for the range with "numDigRange". 
+# If calcCV is set to TRUE, it will return the CV in parentheses. 
+# If calcMedian is set to TRUE, it will return the median in parentheses just after the mean. 
+# If calc95CI is set to TRUE, it will return the 95% confidence interval. 
+# If reportn is set to TRUE, it will return the number of observations.
+# You can optionally set the number of digits with "ndig". 
+# By default, this ignores NAs, but you can change that with "na.rm". 
+
 
 # Input:
 # x = a vector of numbers OR a single mean
 # stdev.x = the sd of the mean provided (leave as NULL if providing a vector of numbers)
-# calcRange = T or F for whether to provide the range in parentheses
-# calcCV = T or F for whether to provide the coefficient of variation in parentheses
-# calc95CI = T or F for whether to provide the 95% confidence interval
+# calcRange = logical (TRUE or FALSE)
+# numDigRange = numeric
+# calcCV = logical
+# calcMedian = logical
+# calc95CI = logical
+# reportn = logical
 # ndig = the number of sig figs to use if you want to set to a specific value
+# na.rm = logical
 
 # Example of ultimate output with all possible options set to TRUE:
 # 5.1 (5) +/- 0.2 (4.7 to 5.3, 3.7%, 95%CI: 4.6 to 5.2, n = 18)
 # mean (median) +/- sd (range.min to range.max, CV%, 95%CI: lower to upper, n = n)
 
 # NB: I have not set this up to deal with mean values in scientific notation.
+# NB: If sd(x) == 0 and mean(x) includes a decimal point, I've arbitrarily 
+# set this function to return numbers to the 1000ths place. If you want
+# a different number of digits, change this on the line that reads: 
+# "nsmall <- 3 # Arbitrarily setting this."
+
+
 
 mean.sd <- function(x, stdev.x = NULL, 
                     calcRange = FALSE, numDigRange = NA,
@@ -95,7 +110,11 @@ mean.sd <- function(x, stdev.x = NULL,
                   DecLocSD <- str_locate(as.character(format(signif(stdev.x, 1), 
                                                              scientific = FALSE)), 
                                          "\\.(0){0,20}[1-9]")[2]
-                  nsmall <- DecLocSD - 2 # It's "-2" b/c you need one character for the "0" and one for the "."
+                  if(is.na(DecLocSD)){ # This will happen if sd(x) == 0 and there are digits after a decimal in mean(x)
+                        nsmall <- 3 # Arbitrarily setting this. 
+                  } else {
+                        nsmall <- DecLocSD - 2 # It's "-2" b/c you need one character for the "0" and one for the "."
+                  }
                   
                   stdev.x.sig <- prettyNum(signif(stdev.x, 1), big.mark = ",",
                                            scientific = FALSE, nsmall = nsmall)
