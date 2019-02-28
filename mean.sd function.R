@@ -1,5 +1,6 @@
 # mean.sd function
 
+
 # This function takes a numeric vector OR mean and sd values and outputs the 
 # mean plus or minus the standard deviation of that vector with 
 # an appropriate number of sig figs. 
@@ -30,11 +31,7 @@
 # mean (median) +/- sd (range.min to range.max, CV%, 95%CI: lower to upper, n = n)
 
 # NB: I have not set this up to deal with mean values in scientific notation.
-# NB: If sd(x) == 0 and mean(x) includes a decimal point, I've arbitrarily 
-# set this function to return numbers to the 1000ths place. If you want
-# a different number of digits, change this on the line that reads: 
-# "nsmall <- 3 # Arbitrarily setting this."
-
+# NB: If sd(x) == 0, output will be unique(x). 
 
 
 mean.sd <- function(x, stdev.x = NULL, 
@@ -52,6 +49,10 @@ mean.sd <- function(x, stdev.x = NULL,
       
       if(length(x) == 1 & is.null(stdev.x)){
             return(x)
+      }
+      
+      if(sd(x, na.rm = T) == 0){
+            return(unique(x))
       }
       
       if(na.rm == FALSE & (all(complete.cases(x)) == FALSE |
