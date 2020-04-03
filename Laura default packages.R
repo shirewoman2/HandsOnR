@@ -1,19 +1,17 @@
 # Laura's default packages and settings
+# Also available in a Git repo at https://gitlab.cs.washington.edu/PKLab/GeneralScripts
 
-library(xlsx)
-library(plyr)
-library(dplyr)
-library(tidyr)
-library(stringr)
 library(lubridate)
-library(ggplot2)
+library(gridExtra)
+library(tidyverse)
+library(xlsx)
 library(ggpubr)
 library(scales)
-library(gridExtra)
+library(LaurasHelpers)
 
 
 ThemeLaura <- function (base_size = 12, base_family = "") {
-      theme_gray(base_size = base_size, base_family = base_family) %+replace% 
+      theme_gray(base_size = base_size, base_family = base_family) %+replace%
             theme(
                   panel.background = element_rect(fill="white", color=NA),
                   panel.grid.minor.y = element_line(color = NA),
@@ -24,7 +22,7 @@ ThemeLaura <- function (base_size = 12, base_family = "") {
                   strip.background = element_rect(color=NA, fill="white"),
                   legend.background = element_rect(color=NA, fill=NA),
                   legend.key = element_rect(color=NA, fill=NA)
-            )   
+            )
 }
 
 scale_colour_discrete <- function(...) scale_colour_brewer(..., palette="Set1")
@@ -40,6 +38,14 @@ if(Sys.info()[["nodename"]] == "SOP-D-2FFVP52"){ # Brunhilde
 if(Sys.info()[["nodename"]] == "BUFFY"){
       GenScriptDir <- "C:/Users/Laura Shireman/Documents/R/General scripts"
 }
+
+colRainbow <- colorRampPalette(c("gray20", "antiquewhite4", "firebrick3",
+                                 "darkorange", "green3", "seagreen3",
+                                 "cadetblue", "dodgerblue3", "royalblue4",
+                                 "darkorchid4"))
+
+blueGreen <- colorRampPalette(c("green3", "seagreen3", "cadetblue", "dodgerblue3",
+                                "royalblue4"))
 
 
 
