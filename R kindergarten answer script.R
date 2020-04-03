@@ -99,16 +99,13 @@ Students %>% filter(Cookie == "molasses spice" |
 Students %>% filter(Sleep.hr >= 7.5)
 
 
-# f (This type of subsetting is base R.)
-Students$Name[str_detect(Students$Name, "a$|e$")]
-
-# g
+# f
 MyNum <- c(5, 2, NA, 10)
 MyNum[MyNum > 2]
 MyNum[which(MyNum > 2)]
 
 
-# h
+# g
 data(Candidates)
 # One option, using base R syntax combined with stringr (str_detect comes from
 # the package stringr)
