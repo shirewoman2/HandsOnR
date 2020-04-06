@@ -109,8 +109,8 @@ MyNum[which(MyNum > 2)]
 data(Candidates)
 # One option, using base R syntax combined with stringr (str_detect comes from
 # the package stringr)
-length(Candidates$contributor_name[str_detect(Candidates$contributor_name, 
-                                              "NGUYEN")])
+length(unique(Candidates$contributor_name[
+      str_detect(Candidates$contributor_name, "NGUYEN")]))
 
 # Another idea, using the tidyverse syntax "pull", which pulls from a data.frame
 # only the column you specify.
