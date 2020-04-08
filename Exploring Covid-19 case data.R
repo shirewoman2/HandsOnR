@@ -62,6 +62,10 @@ C19_counties <- C19_counties %>%
 C19_states <- C19_states %>% 
       mutate(MortRate = deaths / cases)
 
+# Getting the latest date for which we have data
+LatestDate <- max(C19_states$date)
+LatestDate <- paste0(month(LatestDate, label = T, abbr = F), " ",
+                     day(LatestDate), ", ", year(LatestDate))
 
 # Adding population data from the US Census Bureau
 setwd("C:/Users/Laura Shireman/OneDrive/Documents/Software training files/Hands-on R training sessions")
@@ -91,10 +95,44 @@ C19_counties_WA <- C19_counties %>%
       mutate(Case_per100k = cases / (Population/100000), 
              Death_per100k = deaths / (Population/100000))
 
-# Getting the latest date for which we have data
-LatestDate <- max(C19_states$date)
-LatestDate <- paste0(month(LatestDate, label = T, abbr = F), " ",
-                     day(LatestDate), ", ", year(LatestDate))
+# Also adding US population
+USpop <- read.csv("nst-est2019-01.csv", stringsAsFactors = FALSE)
+str(USpop)
+
+# Tidying and converting to long format
+USpop <- USpop %>% rename(state = matches("state")) %>% 
+      gather(key = Year, value = Population, -state) %>% 
+      filter(!state %in% c("Northeast", "Midwest", "South", "West")) %>% 
+      mutate(Year = sub("X", "", Year),
+             Year = as.numeric(Year), 
+             state = factor(state),
+             state = relevel(state, "United States"))
+
+# Joining the most-recent population estimates with the Covid-19 data. 
+C19_states <- C19_states %>%
+      left_join(USpop %>% filter(Year == 2019) %>% select(-Year)) %>% 
+      mutate(Case_per100k = cases / (Population/100000), 
+             Death_per100k = deaths / (Population/100000))
+
+# A UW political science professor just published a paper on how the political
+# affiliation of state governor affects the time it took for social-distancing
+# measures to be adopted. Here are all the political parties of the US governors
+# by state or territory.
+Gov <- read.csv("Governors by state and party.csv", stringsAsFactors = FALSE)
+# See the UW News story here: https://www.washington.edu/news/2020/03/31/republican-governors-delayed-key-covid-19-social-distancing-measures/?utm_source=UW%20News&utm_medium=tile&utm_campaign=UW%20NEWS
+
+# Tidying
+names(Gov)[1] <- "state"
+Gov$state[Gov$state == "U.S. Virgin Islands"] <- "Virgin Islands"
+# Note: Samoa isn't included in the NYT Covid-19 data. 
+
+# For simplicity, making the Minnesota governor's party "Democratic" rather than
+# "Democratic-Farmer-Labor".
+Gov$Party[str_detect(Gov$Party, "Labor")] <- "Democratic"
+
+# Adding party data to state data.
+C19_states <- C19_states %>% 
+      left_join(Gov)
 
 
 # County data: Exploratory graphs ----------------------------------------------------------
@@ -208,8 +246,26 @@ ggsave("Cumulative Covid-19 cases by state.png",
        width = 12, height = 6)
 
 
-
-
-
-
+# Looking at apparent case fatality rate by governor party affiliation
+ggplot(C19_states %>% mutate(Party = ifelse(is.na(Party), "not applicable", 
+                                            Party),
+                             Party = factor(Party, levels = c("Democratic", 
+                                                              "Republican",
+                                                              "not applicable"))) %>% 
+             filter(complete.cases(Population)),
+       aes(x = state, y = Case_per100k, fill = Party)) +
+      geom_bar(stat = "identity") +
+      scale_fill_manual(values = c("#1B587C", "#9F2936", "gray50")) +
+      theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
+      annotate("text", x = 40, y = Inf, hjust = 0, vjust = 1.25,
+               fontface = "italic", size = 2.5,
+               label = "The actual number of cases is likely underreported.\nThe number of deaths is likely to rise.") +
+      ylab(paste("Number of cases per 100,000 people\nas of", 
+                 LatestDate)) +
+      xlab("State") +
+      ggtitle("Covid-19 number of cases per 100,000 people by state",
+              subtitle = paste("Data from https://github.com/nytimes/covid-19-data, accessed on",
+                               Today))
+ggsave("Covid-19 number of cases per 100k population by state and political affiliation of governor.png", 
+       width = 14, height = 4)
 
