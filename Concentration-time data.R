@@ -35,13 +35,33 @@ Subjects <- expand.grid(Drug = c("A", "B"),
                         SubjectID = c(101:150),
                         stringsAsFactors = FALSE) %>% 
       left_join(PKparams_mean) %>% 
-      mutate(k = rnorm(nrow(.), 1, 0.1), 
-             Vd = rnorm(nrow(.), 1, 0.1))
+      mutate(k = 10^(rnorm(nrow(.), 1, 0.1))/10 * 
+                   k_meanpop,
+             # trying to make a skew distribution without having *too* much
+             # variation, which is challenging!
+             Vd = 10^(rnorm(nrow(.), 1, 0.1))/10 * 
+                   Vd_meanpop)
 
 # # Checking that that's a reasonable amount of variability
-# Subjects %>% group_by(Drug, DoseRoute) %>% 
-#       summarize(Meank = mean_sd(k, calcRange = TRUE), 
-#                 MeanVd = mean_sd(Vd, calcRange = TRUE))
+# Subjects %>% group_by(Drug, DoseRoute) %>%
+#       summarize(Min_k = min(k), Max_k = max(k),
+#                 Min_Vd = min(Vd), Max_Vd = max(Vd))
+# 
+# ParamCheck <- Subjects %>% gather(key = Param, value = Value, -Drug, -DoseRoute,
+#                                   -SubjectID, -k_meanpop, -Vd_meanpop)
+# 
+# ggplot(ParamCheck %>% filter(Param == "k"),
+#        aes(x = Value, fill = DoseRoute)) +
+#       geom_histogram(color = "white", bins = 15) +
+#       facet_wrap(DoseRoute ~ Drug, scales = "free") +
+#       ggtitle("k")
+# 
+# ggplot(ParamCheck %>% filter(Param == "Vd"),
+#        aes(x = Value, fill = DoseRoute)) +
+#       geom_histogram(color = "white", bins = 15) +
+#       facet_wrap(DoseRoute ~ Drug, scales = "free") +
+#       ggtitle("Vd")
+
 
 # Now, let's use those starting data to make up some concentration-time data. At
 # each study day, they had blood draws at the times listed.
@@ -55,23 +75,35 @@ Times <- expand.grid(Drug = c("A", "B"),
 ConcTime <- Subjects %>% 
       left_join(Times) %>% left_join(StudyDesign) %>% 
       mutate(Concentration = 
-                   Dose/Vd * exp(-k * TimeHr) * rnorm(nrow(.), 1, 0.2)) # units become ng/mL
+                   Dose/Vd * exp(-k * TimeHr) * rnorm(nrow(.), 1, 0.025)) # units become ng/mL
 
-# # Checking that this looks reasonable      
-# ggplot(ConcTime %>% filter(SubjectID == 101), 
+# # Checking that this looks reasonable
+# windows()
+# ggplot(ConcTime %>% filter(SubjectID == 101),
 #        aes(x = TimeHr, y = Concentration, color = DoseRoute, shape = Drug)) +
 #       geom_point() + geom_line() +
 #       scale_y_log10()
-#       
+# 
 # 
 # # Looking at all the data together
-# ggplot(ConcTime, aes(x = TimeHr, y = Concentration, color = SubjectID,
-#                      shape = Drug)) +
-#       geom_point(alpha = 0.5) + 
+# ConcTime_mean <- ConcTime %>% 
+#       group_by(Drug, DoseRoute, TimeHr) %>% 
+#       summarize(MeanConc = mean(Concentration),
+#                 SDConc = sd(Concentration))
+# 
+# ggplot(ConcTime_mean, aes(x = TimeHr, y = MeanConc,
+#                           ymin = MeanConc - SDConc, 
+#                           ymax = MeanConc + SDConc,
+#                           color = DoseRoute, shape = Drug)) +
+#       geom_point() + geom_line() +
+#       geom_errorbar() +
 #       scale_y_log10() +
 #       facet_grid(DoseRoute ~ Drug)
 
-# Let's add some meta data to make things interesting. 
+
+# Let's add some meta data to make things interesting. Really, it would be even
+# more interesting if some of the PK parameters depended on these traits, but
+# I'm not going to do that for now.
 Meta <- Subjects %>% select(SubjectID) %>%
       mutate(Sex = sample(c("female", "male"), nrow(.), replace = TRUE),
              Age = rnorm(nrow(.), 35, 5),
