@@ -56,6 +56,20 @@ C19_counties <- C19_counties %>%
 C19_states <- C19_states %>% 
       mutate(date = as.Date(date))
 
+# Adding columns for the number of new cases and the number of new deaths. To do
+# this, we'll need to break down the data by state and county (C19_counties) or
+# by state (C19_states).
+C19_counties <- C19_counties %>% arrange(county, state, date) %>% 
+      group_by(county, state, fips) %>% 
+      mutate(new_cases = c(1, diff(cases, 1)),
+             new_deaths = c(1, diff(deaths, 1)))
+
+C19_states <- C19_states %>% arrange(state, date) %>% 
+      group_by(state, fips) %>% 
+      mutate(new_cases = c(1, diff(cases, 1)),
+             new_deaths = c(1, diff(deaths, 1)))
+
+
 # What about the death rate per case? Does that show anything interesting?
 C19_counties <- C19_counties %>% 
       mutate(MortRate = deaths / cases)
@@ -124,7 +138,8 @@ Gov <- read.csv("Governors by state and party.csv", stringsAsFactors = FALSE)
 # Tidying
 names(Gov)[1] <- "state"
 Gov$state[Gov$state == "U.S. Virgin Islands"] <- "Virgin Islands"
-# Note: Samoa isn't included in the NYT Covid-19 data. 
+# Note: Samoa isn't included in the NYT Covid-19 data, and the Mariana Islands
+# isn't included in the Census Bureau data I've found so far.
 
 # For simplicity, making the Minnesota governor's party "Democratic" rather than
 # "Democratic-Farmer-Labor".
@@ -176,6 +191,38 @@ ggplot(C19_counties_WA %>% filter(date == max(date)),
 ggsave("Covid-19 apparent case fatality rate by WA county.png", 
        width = 12, height = 4)
 
+# Nationwide county data ----------------------------------------------------
+
+# Out of curiosity, which counties are the worst?
+WorstCounties <- C19_counties %>% filter(date == max(date)) %>% 
+      arrange(desc(cases)) %>% head(25) %>% 
+      mutate(CoSt = paste(county, state, sep = ", "))
+ggplot(WorstCounties, aes(x = reorder(CoSt, desc(cases)), y = cases)) +
+      geom_bar(stat = "identity") +
+      theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+WorstCounties2 <- C19_counties %>%
+      # only looking at instances where there are more than 10 cases since
+      # otherwise we're talking about really rare events. Removing instances
+      # where we don't know the county b/c those are also rare.
+      filter(date == max(date) & cases > 10 & !str_detect(county, "Unknown")) %>% 
+      arrange(desc(MortRate)) %>% head(25) %>% 
+      mutate(CoSt = paste(county, state, sep = ", ")) %>% 
+      # adding governor party data
+      left_join(Gov)
+
+ggplot(WorstCounties2, aes(x = reorder(CoSt, desc(MortRate)), y = MortRate,
+                           fill = Party)) +
+      geom_bar(stat = "identity") +
+      scale_fill_manual(values = c("#1B587C", "#9F2936", "gray50")) +
+      xlab("County, State") + 
+      ylab(paste("Number of deaths per case of infection\nas of", 
+                 LatestDate)) +
+      ggtitle("Covid-19 apparent case fatality rate by state",
+              subtitle = paste("Data from https://github.com/nytimes/covid-19-data, accessed on",
+                               Today)) +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
 
 # Just WA population ------------------------------------------------------
 ggplot(WApop, aes(x = Year, y = Population, color = county)) +
@@ -203,6 +250,14 @@ ggplot(C19_states %>% filter(date == max(date)),
 ggsave("Covid-19 apparent case fatality rate by state.png", 
        width = 14, height = 4)
 
+
+# new cases 
+ggplot(C19_states %>% 
+             filter(state %in% c("Washington", "Oregon", "Idaho",
+                                 "Montana", "California")),
+                    aes(x = date, y = new_cases, color = state)) +
+      geom_line() + 
+      scale_y_log10()
 
 
 # Call up my graphing preferences for this next graph... 
