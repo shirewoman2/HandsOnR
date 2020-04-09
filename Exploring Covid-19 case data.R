@@ -1,6 +1,6 @@
-# Exploring Covid-19 case data
+# Exploring COVID-19 case data
 
-# This script explores Covid-19 cases and deaths using data collected and
+# This script explores COVID-19 cases and deaths using data collected and
 # provided by The New York Times. I last accessed this on April 8, 2020, but the
 # website currently is being updated daily, so the data will be up to date
 # whenever this script is run.
@@ -88,7 +88,7 @@ WApop <- WApop %>% rename(county = matches("County")) %>%
              county = relevel(county, "Washington (entire state)"))
 
 # These are kind of interesting on their own, but really, we want to join the
-# most-recent population estimates with the Covid-19 data. Doing that.
+# most-recent population estimates with the COVID-19 data. Doing that.
 C19_counties_WA <- C19_counties %>%
       filter(state == "Washington") %>% 
       left_join(WApop %>% filter(Year == 2019) %>% select(-Year)) %>% 
@@ -108,7 +108,7 @@ USpop <- USpop %>% rename(state = matches("state")) %>%
              state = factor(state),
              state = relevel(state, "United States"))
 
-# Joining the most-recent population estimates with the Covid-19 data. 
+# Joining the most-recent population estimates with the COVID-19 data. 
 C19_states <- C19_states %>%
       left_join(USpop %>% filter(Year == 2019) %>% select(-Year)) %>% 
       mutate(Case_per100k = cases / (Population/100000), 
@@ -119,12 +119,12 @@ C19_states <- C19_states %>%
 # measures to be adopted. Here are all the political parties of the US governors
 # by state or territory.
 Gov <- read.csv("Governors by state and party.csv", stringsAsFactors = FALSE)
-# See the UW News story here: https://www.washington.edu/news/2020/03/31/republican-governors-delayed-key-covid-19-social-distancing-measures/?utm_source=UW%20News&utm_medium=tile&utm_campaign=UW%20NEWS
+# See the UW News story here: https://www.washington.edu/news/2020/03/31/republican-governors-delayed-key-COVID-19-social-distancing-measures/?utm_source=UW%20News&utm_medium=tile&utm_campaign=UW%20NEWS
 
 # Tidying
 names(Gov)[1] <- "state"
 Gov$state[Gov$state == "U.S. Virgin Islands"] <- "Virgin Islands"
-# Note: Samoa isn't included in the NYT Covid-19 data. 
+# Note: Samoa isn't included in the NYT COVID-19 data. 
 
 # For simplicity, making the Minnesota governor's party "Democratic" rather than
 # "Democratic-Farmer-Labor".
@@ -143,20 +143,20 @@ theme_set(theme_grey())
 
 ggplot(C19_counties %>% filter(state == "Washington"),
        aes(x = date, y = cases, color = county)) +
-      geom_point() + geom_line() +
+      geom_line() +
       scale_y_log10()
 
 ggplot(C19_counties %>%
              filter(state == "Washington", 
                     county %in% c("King", "Kitsap", "Snohomish", "Pierce")),
        aes(x = date, y = cases, color = county)) +
-      geom_point() + geom_line() +
+      geom_line() +
       scale_y_log10()
 
 ggplot(C19_counties_WA %>%
              filter(county %in% c("King", "Kitsap", "Snohomish", "Pierce")),
        aes(x = date, y = Case_per100k, color = county)) +
-      geom_point() + geom_line() +
+      geom_line() +
       scale_y_log10()
 
 ggplot(C19_counties_WA %>% filter(date == max(date)), 
@@ -170,10 +170,10 @@ ggplot(C19_counties_WA %>% filter(date == max(date)),
       ylab(paste("Number of deaths per case of infection\nas of", 
                  LatestDate)) +
       xlab("Washington State county") +
-      ggtitle("Covid-19 apparent case fatality rate by county in Washington State",
+      ggtitle("COVID-19 apparent case fatality rate by county in Washington State",
               subtitle = paste("Data from https://github.com/nytimes/covid-19-data, accessed on",
               Today))
-ggsave("Covid-19 apparent case fatality rate by WA county.png", 
+ggsave("COVID-19 apparent case fatality rate by WA county.png", 
        width = 12, height = 4)
 
 
@@ -197,10 +197,10 @@ ggplot(C19_states %>% filter(date == max(date)),
       ylab(paste("Number of deaths per case of infection\nas of", 
                  LatestDate)) +
       xlab("State") +
-      ggtitle("Covid-19 apparent case fatality rate by state",
+      ggtitle("COVID-19 apparent case fatality rate by state",
               subtitle = paste("Data from https://github.com/nytimes/covid-19-data, accessed on",
                                Today))
-ggsave("Covid-19 apparent case fatality rate by state.png", 
+ggsave("COVID-19 apparent case fatality rate by state.png", 
        width = 14, height = 4)
 
 
@@ -239,10 +239,10 @@ ggplot(C19_states, aes(x = date, y = cases, color = state)) +
       xlab("Date") + 
       ylab(paste("Cumulative number of cases as of", 
                  LatestDate)) +
-      ggtitle("Cumulative Covid-19 cases by state",
+      ggtitle("Cumulative COVID-19 cases by state",
               subtitle = paste("Data from https://github.com/nytimes/covid-19-data, accessed on",
                                Today))
-ggsave("Cumulative Covid-19 cases by state.png", 
+ggsave("Cumulative COVID-19 cases by state.png", 
        width = 12, height = 6)
 
 
@@ -263,9 +263,9 @@ ggplot(C19_states %>% mutate(Party = ifelse(is.na(Party), "not applicable",
       ylab(paste("Number of cases per 100,000 people\nas of", 
                  LatestDate)) +
       xlab("State") +
-      ggtitle("Covid-19 number of cases per 100,000 people by state",
-              subtitle = paste("Data from https://github.com/nytimes/covid-19-data, accessed on",
+      ggtitle("COVID-19 number of cases per 100,000 people by state",
+              subtitle = paste("Data from the U.S. Census Bureau and from https://github.com/nytimes/covid-19-data, accessed on",
                                Today))
-ggsave("Covid-19 number of cases per 100k population by state and political affiliation of governor.png", 
+ggsave("COVID-19 number of cases per 100k population by state and political affiliation of governor.png", 
        width = 14, height = 4)
 
