@@ -265,7 +265,8 @@ ggplot(C19_states %>% mutate(Party = ifelse(is.na(Party), "not applicable",
       xlab("State") +
       ggtitle("COVID-19 number of cases per 100,000 people by state",
               subtitle = paste("Data from the U.S. Census Bureau and from https://github.com/nytimes/covid-19-data, accessed on",
-                               Today))
+                               Today)) +
+      theme(legend.position = "bottom")
 ggsave("COVID-19 number of cases per 100k population by state and political affiliation of governor.png", 
-       width = 14, height = 4)
+       width = 14, height = 4.5)
 
