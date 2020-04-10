@@ -41,6 +41,16 @@ read.gitcsv <- function(url, stringsAsFactors = FALSE){
 Today <- paste0(month(today(), label = T, abbr = F), " ",
                 day(today()), ", ", year(today()))
 
+# I'm going to be loading some data from a locally stored drive. (All of this is
+# available from the Dropbox folder or the github site I've shared with you.)
+# Setting my local drive here so that I'm set when I need to load those files
+# lower in the script.
+
+# Replace this path with the one on your machine. 
+MyDir <- "C:/Users/Laura Shireman/OneDrive/Documents/Software training files/Hands-on R training sessions"
+setwd(MyDir)
+
+
 # Loading and tidying data ---------------------------------------------------
 
 C19_counties <- read.gitcsv("https://github.com/nytimes/covid-19-data/blob/master/us-counties.csv")
@@ -68,8 +78,6 @@ LatestDate <- paste0(month(LatestDate, label = T, abbr = F), " ",
                      day(LatestDate), ", ", year(LatestDate))
 
 # Adding population data from the US Census Bureau
-setwd("C:/Users/Laura Shireman/OneDrive/Documents/Software training files/Hands-on R training sessions")
-
 WApop <- read.csv("co-est2019-annres-53.csv")
 str(WApop)
 
