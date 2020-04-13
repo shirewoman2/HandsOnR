@@ -230,6 +230,9 @@ ggplot(WorstCounties2, aes(x = reorder(CoSt, desc(MortRate)), y = MortRate,
               subtitle = paste("Data from https://github.com/nytimes/covid-19-data, accessed on",
                                Today)) +
       theme(axis.text.x = element_text(angle = 45, hjust = 1))
+ggsave("Hardest-hit counties across the country colored by party of governor.png",
+       width = 10, height = 4)
+
 
 
 # Just WA population ------------------------------------------------------
@@ -257,15 +260,6 @@ ggplot(C19_states %>% filter(date == max(date)),
                                Today))
 ggsave("COVID-19 apparent case fatality rate by state.png", 
        width = 14, height = 4)
-
-
-# new cases 
-ggplot(C19_states %>% 
-             filter(state %in% c("Washington", "Oregon", "Idaho",
-                                 "Montana", "California")),
-                    aes(x = date, y = new_cases, color = state)) +
-      geom_line() + 
-      scale_y_log10()
 
 
 # Call up my graphing preferences for this next graph... 
@@ -332,4 +326,23 @@ ggplot(C19_states %>% mutate(Party = ifelse(is.na(Party), "not applicable",
       theme(legend.position = "bottom")
 ggsave("COVID-19 number of cases per 100k population by state and political affiliation of governor.png", 
        width = 14, height = 4.5)
+
+
+
+
+# new cases 
+ggplot(C19_states %>% 
+             filter(state %in% c("Washington", "Oregon", "Idaho",
+                                 "Montana", "California", "New York")),
+       aes(x = date, y = new_cases, color = state)) +
+      geom_line() + 
+      geom_line(data = C19_states %>% 
+                      filter(state %in% c("Washington")), size = 2) +
+      scale_y_log10() +
+      ggtitle("COVID-19 number of new cases by state",
+              subtitle = paste("Data from https://github.com/nytimes/covid-19-data, accessed on",
+                               Today)) +
+      xlab("Date") + ylab("Number of new cases each day\nreported by The New York Times")
+ggsave("Number of new COVID-19 cases reported by The New York Times.png", 
+       width = 7, height = 4)
 
