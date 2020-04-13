@@ -68,7 +68,7 @@ tukeyStar(Donations, groupColumn = "party", valueColumn = "amount")
 # do that.
 tukeyStar(Donations, groupColumn = "party", valueColumn = "amount") +
       scale_y_log10()
-# It *does* mess up the look of the comparison bars a little, but you get the idea. :-)
+# It *does* mess up the look of the comparison bars, but you get the idea. :-)
 
 
 # Linear regression ---------------------------------------------------------
@@ -120,7 +120,7 @@ ggplot(Students, aes(x = VampTV.hr, y = Sleep.hr, color = Gender)) +
 
 VampTrouble2 <- lm(Sleep.hr ~ VampTV.hr + Gender, data = Students)
 summary(VampTrouble2)
-# Gender is not significant at the 95% confidence level, but vamp TV sure is.
+# Gender is not significant at the 95% confidence level.
 
 # 16
 VampTrouble3 <- lm(Sleep.hr ~ VampTV.hr + Gender + VampTV.hr * Gender,
@@ -128,7 +128,8 @@ VampTrouble3 <- lm(Sleep.hr ~ VampTV.hr + Gender + VampTV.hr * Gender,
 summary(VampTrouble3)
 # Nope. It doesn't look like we have sufficient evidence that the slope differs
 # between the sexes. It may in fact differ, but we lack the evidence to show
-# that with these data.
+# that with these data. Nota bene: You can't interpret the statistical
+# significance of the other betas when there's an interaction term.
 
 
 # Nonlinear regression -----------------------------------------------
@@ -149,11 +150,19 @@ summary(MyNLM)$coef[1, 4]
 # 19 
 MyFit <- stdCurve(ExStdCurve, normPeak = "MET.peakarearatio",
                   nominal = "MET.nominalmass", poly = "2nd")
-names(MyFit)
 
 summary(MyFit$Fit)
 
+# 19 challenge
+?stdCurve
+names(MyFit)
+head(MyFit$CurvePlot)
+# This is the data included behind the scenes in a ggplot2 graph. Try just
+# running this:
+MyFit$CurvePlot
 
+head(MyFit$Curve.DF)
+# These are the points used for drawing the fitted line in the graph
 
-
-
+head(MyFit$Data)
+# These are the data that were used to perform the regression. 
