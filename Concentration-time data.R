@@ -148,4 +148,8 @@ ggplot(StudyDays %>% left_join(Subjects) %>%
 ggsave("Violin plot example.png", width = 6, height = 4, dpi = 600)
 
 
+# Saving the data for use elsewhere -------------------------------------
+
+save(ConcTime, file = "Concentration-time data to play with.RData")
+
 
