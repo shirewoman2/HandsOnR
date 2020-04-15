@@ -330,11 +330,13 @@ ggsave("COVID-19 number of cases per 100k population by state and political affi
 
 
 
-# new cases 
-ggplot(C19_states %>% 
-             filter(state %in% c("Washington", "Oregon", "Idaho",
-                                 "Montana", "California", "New York")),
-       aes(x = date, y = new_cases, color = state)) +
+# New cases ---------------------------------------------------------------
+
+NWandNY <- C19_states %>% 
+      filter(state %in% c("Washington", "Oregon", "Idaho",
+                          "Montana", "California", "New York"))
+
+ggplot(NWandNY, aes(x = date, y = new_cases, color = state)) +
       geom_line() + 
       geom_line(data = C19_states %>% 
                       filter(state %in% c("Washington")), size = 2) +
@@ -346,3 +348,17 @@ ggplot(C19_states %>%
 ggsave("Number of new COVID-19 cases reported by The New York Times.png", 
        width = 7, height = 4)
 
+
+ggplot(NWandNY, aes(x = date, y = new_cases, color = state, fill = state)) +
+      geom_bar(stat = "identity") +
+      geom_line(data = NWandNY, aes(x = date, y = cases)) +
+      facet_wrap(~ state, scales = "free_y") +
+      scale_y_log10() +
+      xlab("Date") + 
+      ylab(paste("Number of cases as of", LatestDate)) +
+      ggtitle("Number of cases of COVID-19 in western states and New York as reported by The New York Times",
+              subtitle = paste("Data from https://github.com/nytimes/covid-19-data, accessed on",
+                               Today,"\nBars = new cases. Lines = cumulative cases.\nNote that y axis is on the log scale."))
+
+ggsave("Number of cases of COVID-19 in western states and New York.png", 
+       height = 6, width = 12)       
