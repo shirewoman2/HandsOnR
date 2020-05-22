@@ -5,10 +5,12 @@
 # website currently is being updated daily, so the data will be up to date
 # whenever this script is run.
 
+
 # Housekeeping --------------------------------------------------------
 library(tidyverse)
 library(LaurasHelpers)
 library(lubridate)
+library(slider)
 
 ThemeLaura <- function (base_size = 12, base_family = "") {
       theme_gray(base_size = base_size, base_family = base_family) %+replace%
@@ -57,7 +59,7 @@ C19_counties <- read.gitcsv("https://github.com/nytimes/covid-19-data/blob/maste
 C19_states <- read.gitcsv("https://github.com/nytimes/covid-19-data/blob/master/us-states.csv")
 
 # Checking the structure of the data. 
-str(C19_counties)
+# str(C19_counties)
 
 # We need to convert the "date" column from character to Date format. 
 C19_counties <- C19_counties %>% 
@@ -93,7 +95,7 @@ LatestDate <- paste0(month(LatestDate, label = T, abbr = F), " ",
 
 # Adding population data from the US Census Bureau
 WApop <- read.csv("co-est2019-annres-53.csv")
-str(WApop)
+# str(WApop)
 
 # Tidying and converting to long format
 WApop <- WApop %>% rename(county = matches("County")) %>% 
@@ -119,7 +121,7 @@ C19_counties_WA <- C19_counties %>%
 
 # Also adding US population
 USpop <- read.csv("nst-est2019-01.csv", stringsAsFactors = FALSE)
-str(USpop)
+# str(USpop)
 
 # Tidying and converting to long format
 USpop <- USpop %>% rename(state = matches("state")) %>% 
@@ -155,7 +157,12 @@ Gov$Party[str_detect(Gov$Party, "Labor")] <- "Democratic"
 
 # Adding party data to state data.
 C19_states <- C19_states %>% 
-      left_join(Gov)
+      left_join(Gov) %>% 
+      mutate(Party = ifelse(is.na(Party), "not applicable", 
+                            Party),
+             Party = factor(Party, levels = c("Democratic", 
+                                              "Republican",
+                                              "not applicable")))
 
 
 # County data: Exploratory graphs ----------------------------------------------------------
@@ -173,14 +180,17 @@ ggplot(C19_counties %>%
              filter(state == "Washington", 
                     county %in% c("King", "Kitsap", "Snohomish", "Pierce")),
        aes(x = date, y = cases, color = county)) +
-      geom_line() +
+      geom_line(size = 2) +
       scale_y_log10()
 
+
+# This is graph A for the R markdown example.
 ggplot(C19_counties_WA %>%
              filter(county %in% c("King", "Kitsap", "Snohomish", "Pierce")),
        aes(x = date, y = Case_per100k, color = county)) +
       geom_line() +
       scale_y_log10()
+
 
 ggplot(C19_counties_WA %>% filter(date == max(date)), 
        aes(x = county, y = MortRate, fill = county)) +
@@ -202,6 +212,8 @@ ggsave("COVID-19 apparent case fatality rate by WA county.png",
 # Nationwide county data ----------------------------------------------------
 
 # Out of curiosity, which counties are the worst?
+
+# This is graph B and the data needed to make it for the R markdown example.
 WorstCounties <- C19_counties %>% filter(date == max(date)) %>% 
       arrange(desc(cases)) %>% head(25) %>% 
       mutate(CoSt = paste(county, state, sep = ", "))
@@ -244,14 +256,23 @@ ggplot(WApop, aes(x = Year, y = Population, color = county)) +
 
 # Cases and deaths by state -----------------------------------------------
 
+StateMeans <- C19_states %>% filter(date == max(date)) %>% 
+      ungroup() %>% 
+      summarize_at(.vars = vars(MortRate, Case_per100k, Death_per100k), 
+                   .fun = mean, na.rm = TRUE)
+
 ggplot(C19_states %>% filter(date == max(date)), 
        aes(x = state, y = MortRate, fill = state)) +
+      geom_hline(yintercept = StateMeans$MortRate, color = "red", 
+                 linetype = "dashed") +
       geom_bar(stat = "identity") +
       theme(axis.text.x = element_text(angle = 30, hjust = 1),
             legend.position = "none") +
       annotate("text", x = 40, y = Inf, hjust = 0, vjust = 1.25,
                fontface = "italic", size = 2.5,
                label = "The actual number of cases is likely underreported.\nThe number of deaths is likely to rise.") +
+      annotate("text", x = 45, y = StateMeans$MortRate, vjust = -0.5,
+               label = "national average", size = 2.5, color = "red") +
       ylab(paste("Number of deaths per case of infection\nas of", 
                  LatestDate)) +
       xlab("State") +
@@ -304,12 +325,8 @@ ggsave("Cumulative COVID-19 cases by state.png",
 
 
 # Looking at apparent case fatality rate by governor party affiliation
-ggplot(C19_states %>% mutate(Party = ifelse(is.na(Party), "not applicable", 
-                                            Party),
-                             Party = factor(Party, levels = c("Democratic", 
-                                                              "Republican",
-                                                              "not applicable"))) %>% 
-             filter(complete.cases(Population)),
+ggplot(C19_states %>%
+             filter(complete.cases(Population) & date == max(C19_states$date)),
        aes(x = state, y = Case_per100k, fill = Party)) +
       geom_bar(stat = "identity") +
       scale_fill_manual(values = c("#1B587C", "#9F2936", "gray50")) +
@@ -324,6 +341,7 @@ ggplot(C19_states %>% mutate(Party = ifelse(is.na(Party), "not applicable",
               subtitle = paste("Data from the U.S. Census Bureau and from https://github.com/nytimes/covid-19-data, accessed on",
                                Today)) +
       theme(legend.position = "bottom")
+
 ggsave("COVID-19 number of cases per 100k population by state and political affiliation of governor.png", 
        width = 14, height = 4.5)
 
@@ -341,6 +359,7 @@ ggplot(NWandNY, aes(x = date, y = new_cases, color = state)) +
       geom_line(data = C19_states %>% 
                       filter(state %in% c("Washington")), size = 2) +
       scale_y_log10() +
+      ggthemes::scale_color_tableau(palette = "Jewel Bright") +
       ggtitle("COVID-19 number of new cases by state",
               subtitle = paste("Data from https://github.com/nytimes/covid-19-data, accessed on",
                                Today)) +
@@ -348,12 +367,40 @@ ggplot(NWandNY, aes(x = date, y = new_cases, color = state)) +
 ggsave("Number of new COVID-19 cases reported by The New York Times.png", 
        width = 7, height = 4)
 
+# Calculating rolling averages to smooth out the data a bit
+Indices <- sort(unique(C19_states$date))
+
+NWandNY_roll <- NWandNY %>% 
+      group_by(state) %>% 
+      mutate(new_cases_Win5 = 
+                      slider::slide_index_vec(new_cases, .i = date,
+                                              .f = mean, 
+                                              .before = days(2),
+                                              .after = days(2)))
+
+ggplot(NWandNY_roll, aes(x = date, y = new_cases_Win5, color = state)) +
+      geom_line() + 
+      geom_line(data = NWandNY_roll %>% 
+                      filter(state %in% c("Washington")), size = 2) +
+      scale_y_log10() +
+      ggthemes::scale_color_tableau(palette = "Jewel Bright") +
+      ggtitle("COVID-19 number of new cases by state",
+              subtitle = paste("Data from https://github.com/nytimes/covid-19-data, accessed on",
+                               Today)) +
+      xlab("Date") + ylab("Rolling average number of new cases\neach day over a 5-day window\nreported by The New York Times")
+ggsave("Rolling average over 5 days of the number of new COVID-19 cases reported by The New York Times.png", 
+       width = 7, height = 4)
+
+
 
 ggplot(NWandNY, aes(x = date, y = new_cases, color = state, fill = state)) +
       geom_bar(stat = "identity") +
       geom_line(data = NWandNY, aes(x = date, y = cases)) +
       facet_wrap(~ state, scales = "free_y") +
+      ggthemes::scale_fill_tableau(palette = "Nuriel Stone") +
+      ggthemes::scale_color_tableau(palette = "Nuriel Stone") +
       scale_y_log10() +
+      theme(legend.position = "none") +
       xlab("Date") + 
       ylab(paste("Number of cases as of", LatestDate)) +
       ggtitle("Number of cases of COVID-19 in western states and New York as reported by The New York Times",
@@ -362,3 +409,4 @@ ggplot(NWandNY, aes(x = date, y = new_cases, color = state, fill = state)) +
 
 ggsave("Number of cases of COVID-19 in western states and New York.png", 
        height = 6, width = 12)       
+

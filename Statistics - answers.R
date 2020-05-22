@@ -146,6 +146,7 @@ summary(MyNLM)
 # 18
 summary(MyNLM)$coef
 summary(MyNLM)$coef[1, 4]
+summary(MyNLM)$coef["A", "Estimate"]
 
 # 19 
 MyFit <- stdCurve(ExStdCurve, normPeak = "MET.peakarearatio",
