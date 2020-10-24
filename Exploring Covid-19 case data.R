@@ -49,7 +49,8 @@ Today <- paste0(month(today(), label = T, abbr = F), " ",
 # lower in the script.
 
 # Replace this path with the one on your machine. 
-MyDir <- "C:/Users/Laura Shireman/OneDrive/Documents/Software training files/Hands-on R training sessions"
+MyPath <- ifelse(Sys.info()[["nodename"]] == "MANIKARNIKA", "C:/Users/shire/", "C:/Users/Laura Shireman")
+MyDir <- paste0(MyPath, "OneDrive/Documents/Software training files/Hands-on R training sessions")
 setwd(MyDir)
 
 
@@ -57,6 +58,8 @@ setwd(MyDir)
 
 C19_counties <- read.gitcsv("https://github.com/nytimes/covid-19-data/blob/master/us-counties.csv")
 C19_states <- read.gitcsv("https://github.com/nytimes/covid-19-data/blob/master/us-states.csv")
+# Note: "cases" and "deaths" columns are cumulative. 
+
 
 # Checking the structure of the data. 
 # str(C19_counties)
@@ -117,7 +120,13 @@ C19_counties_WA <- C19_counties %>%
       filter(state == "Washington") %>% 
       left_join(WApop %>% filter(Year == 2019) %>% select(-Year)) %>% 
       mutate(Case_per100k = cases / (Population/100000), 
-             Death_per100k = deaths / (Population/100000))
+             Death_per100k = deaths / (Population/100000)) %>% 
+      # I'm not sure precisely what it means when the county is "Unknown" and
+      # then the numbers change. I think this is for when people's county was
+      # unknown when first reported and then someone figured it out later. I
+      # don't think the data include which county each unknown ultimately was
+      # assigned to, so I'm removing these data for now.
+      filter(county != "Unknown")
 
 # Also adding US population
 USpop <- read.csv("nst-est2019-01.csv", stringsAsFactors = FALSE)
@@ -191,6 +200,45 @@ ggplot(C19_counties_WA %>%
       geom_line() +
       scale_y_log10()
 
+
+# County-level data --------------------------------------------------------
+ggplot(C19_counties_WA %>%
+             filter(county %in% c("King", "Kitsap", "Snohomish", "Pierce",
+                                  "Yakima", "Spokane")),
+       aes(x = date, y = Case_per100k, color = county)) +
+      geom_line(size = 1) +
+      scale_y_log10() +
+      xlab("Date") + ylab("Cumulative cases per 100,000 residents") +
+      ggtitle("COVID-19 totals for selected Washington State counties",
+              subtitle = paste("Data from https://github.com/nytimes/covid-19-data, accessed on",
+                               Today))
+
+
+
+
+# Calculating a rolling average of new cases. 
+C19_counties_WA <- C19_counties_WA %>% arrange(county, date) %>% 
+      group_by(county) %>% 
+      mutate(new_cases_Win14 =
+                   slider::slide_index_vec(new_cases, .i = date,
+                                           .f = mean, 
+                                           .before = days(7),
+                                           .after = days(7)))
+
+G <- ggplot(C19_counties_WA %>%
+             filter(county %in% c("King", "Kitsap", "Snohomish", "Pierce",
+                                  "Yakima", "Spokane")),
+       aes(x = date, y = new_cases_Win14, color = county)) +
+      geom_line(size = 1) +
+      xlab("Date") + ylab("Average number of newly diagnosed COVID-19 cases\n(14-day window)") +
+      ggtitle("COVID-19 totals for selected Washington State counties",
+              subtitle = paste("Data from https://github.com/nytimes/covid-19-data, accessed on",
+                               Today)) +
+      ggthemes::scale_color_tableau(palette = "Tableau 10")
+G
+
+# Adding a log10 y scale
+G + scale_y_log10()
 
 ggplot(C19_counties_WA %>% filter(date == max(date)), 
        aes(x = county, y = MortRate, fill = county)) +
@@ -375,20 +423,20 @@ NWandNY_roll <- NWandNY %>%
       mutate(new_cases_Win5 = 
                       slider::slide_index_vec(new_cases, .i = date,
                                               .f = mean, 
-                                              .before = days(2),
-                                              .after = days(2)))
+                                              .before = days(7),
+                                              .after = days(6)))
 
 ggplot(NWandNY_roll, aes(x = date, y = new_cases_Win5, color = state)) +
-      geom_line() + 
+      geom_line(size = 1) + 
       geom_line(data = NWandNY_roll %>% 
-                      filter(state %in% c("Washington")), size = 2) +
+                      filter(state %in% c("Washington")), size = 2.5) +
       scale_y_log10() +
       ggthemes::scale_color_tableau(palette = "Jewel Bright") +
       ggtitle("COVID-19 number of new cases by state",
               subtitle = paste("Data from https://github.com/nytimes/covid-19-data, accessed on",
                                Today)) +
-      xlab("Date") + ylab("Rolling average number of new cases\neach day over a 5-day window\nreported by The New York Times")
-ggsave("Rolling average over 5 days of the number of new COVID-19 cases reported by The New York Times.png", 
+      xlab("Date") + ylab("Rolling average number of new cases\neach day over a 14-day window\nreported by The New York Times")
+ggsave("Rolling average over 14 days of the number of new COVID-19 cases reported by The New York Times.png", 
        width = 7, height = 4)
 
 
@@ -409,4 +457,45 @@ ggplot(NWandNY, aes(x = date, y = new_cases, color = state, fill = state)) +
 
 ggsave("Number of cases of COVID-19 in western states and New York.png", 
        height = 6, width = 12)       
+
+NWandNY <- NWandNY %>% mutate(NewCase_per100k = new_cases/(Population/100000))
+
+NWandNY_roll14 <- NWandNY %>% 
+      arrange(state, date) %>% 
+      group_by(state) %>% 
+      mutate(NewCase_per100k_roll = slider::slide_index_vec(NewCase_per100k,
+                                                            .i = date,
+                                                            .f = mean, 
+                                                            .before = days(7),
+                                                            .after = days(6)))
+             
+
+ggplot(NWandNY_roll14, aes(x = date, y = NewCase_per100k_roll, color = state, fill = state)) +
+      geom_line(size = 1) +
+      facet_wrap(~ state, scales = "free_y") +
+      ggthemes::scale_fill_tableau(palette = "Nuriel Stone") +
+      ggthemes::scale_color_tableau(palette = "Nuriel Stone") +
+      theme(legend.position = "none") +
+      xlab("Date") + 
+      ylab(paste("Rolling average number of new cases per 100k population as of", LatestDate)) +
+      ggtitle("Number of new cases of COVID-19 in western states and New York as reported by The New York Times",
+              subtitle = paste("Data from https://github.com/nytimes/covid-19-data, accessed on",
+                               Today))
+
+
+ggplot(NWandNY, aes(x = date, y = NewCase_per100k, color = state, fill = state)) +
+      geom_line() +
+      facet_wrap(~ state, scales = "free_y") +
+      ggthemes::scale_fill_tableau(palette = "Nuriel Stone") +
+      ggthemes::scale_color_tableau(palette = "Nuriel Stone") +
+      theme(legend.position = "none") +
+      xlab("Date") + 
+      ylab(paste("Number of new cases per 100k population as of", LatestDate)) +
+      ggtitle("Number of new cases of COVID-19 in western states and New York as reported by The New York Times",
+              subtitle = paste("Data from https://github.com/nytimes/covid-19-data, accessed on",
+                               Today))
+
+
+
+
 
